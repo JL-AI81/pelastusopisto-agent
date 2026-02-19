@@ -7,35 +7,22 @@ from tools import TOOLS_SCHEMA, TOOL_FUNCTIONS
 
 
 class PelastusopistoAgent:
-    """LLM-agentti joka osaa käyttää fetch_page-työkalua"""
+    """LLM-agentti joka osaa kayttaa fetch_page-tyokalua"""
     
     def __init__(self):
         self.client = Groq(api_key=GROQ_API_KEY)
         self.model = MODEL
         self.conversation_history = []
         
-        # System prompt
-        self.system_prompt = """Olet Pelastusopiston avustaja. 
-Vastaat suomeksi kysymyksiin jotka liittyvät Pelastusopistoon.
-Käytä fetch_page-työkalua hakiessasi tietoa pelastusopisto.fi-sivustolta.
-Tiivistä haettu tieto selkeästi käyttäjälle."""
+        # System prompt - EI AAKKOSIA
+        self.system_prompt = "Olet Pelastusopiston avustaja. Vastaat suomeksi kysymyksiin. Kayta fetch_page-tyokalua hakiessasi tietoa pelastusopisto.fi-sivustolta."
         
-        print(f"✓ Agentti alustettu (malli: {self.model})")
+        print(f"Agentti alustettu (malli: {self.model})")
     
     def chat(self, user_message, max_iterations=5):
-        """
-        Lähetä viesti agentille.
+        """Laheta viesti agentille"""
         
-        Args:
-            user_message (str): Käyttäjän viesti
-            max_iterations (int): Max tool calling -kierroksia
-            
-        Returns:
-            str: Agentin vastaus
-        """
-        # Lisää käyttäjän viesti historiaan
         if not self.conversation_history:
-            # Ensimmäinen viesti, lisää system prompt
             self.conversation_history.append({
                 "role": "system",
                 "content": self.system_prompt
@@ -46,11 +33,9 @@ Tiivistä haettu tieto selkeästi käyttäjälle."""
             "content": user_message
         })
         
-        # Tool calling -loop
         for iteration in range(max_iterations):
             print(f"\n[Iteraatio {iteration + 1}/{max_iterations}]")
             
-            # Kutsu Groq API:a
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=self.conversation_history,
@@ -61,11 +46,9 @@ Tiivistä haettu tieto selkeästi käyttäjälle."""
             
             message = response.choices[0].message
             
-            # Onko tool calls?
             if message.tool_calls:
-                print(f"→ LLM haluaa käyttää {len(message.tool_calls)} työkalua")
+                print(f"LLM haluaa kayttaa {len(message.tool_calls)} tyokalua")
                 
-                # Lisää LLM:n vastaus historiaan
                 self.conversation_history.append({
                     "role": "assistant",
                     "content": message.content,
@@ -82,37 +65,31 @@ Tiivistä haettu tieto selkeästi käyttäjälle."""
                     ]
                 })
                 
-                # Suorita työkalut
                 for tool_call in message.tool_calls:
                     tool_name = tool_call.function.name
                     tool_args = json.loads(tool_call.function.arguments)
                     
-                    print(f"  → Kutsutaan: {tool_name}({tool_args})")
+                    print(f"  Kutsutaan: {tool_name}({tool_args})")
                     
-                    # Suorita työkalu
                     if tool_name in TOOL_FUNCTIONS:
                         result = TOOL_FUNCTIONS[tool_name](**tool_args)
-                        print(f"  ← Status: {result.get('status', 'unknown')}")
+                        print(f"  Status: {result.get('status', 'unknown')}")
                     else:
-                        result = {"status": "error", "content": f"Tuntematon työkalu: {tool_name}"}
+                        result = {"status": "error", "content": f"Tuntematon tyokalu: {tool_name}"}
                     
-                    # Lisää tulos historiaan
                     self.conversation_history.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
                         "content": json.dumps(result, ensure_ascii=False)
                     })
                 
-                # Jatka looppia
                 continue
             
             else:
-                # Ei tool calls, lopullinen vastaus
-                print("→ LLM antoi lopullisen vastauksen")
+                print("LLM antoi lopullisen vastauksen")
                 
                 final_answer = message.content or ""
                 
-                # Lisää historiaan
                 self.conversation_history.append({
                     "role": "assistant",
                     "content": final_answer
@@ -120,10 +97,27 @@ Tiivistä haettu tieto selkeästi käyttäjälle."""
                 
                 return final_answer
         
-        # Max iteraatiot ylitetty
         return "Virhe: Liian monta iteraatiota"
     
     def reset(self):
-        """Tyhjennä keskusteluhistoria"""
+        """Tyhjenna keskusteluhistoria"""
         self.conversation_history = []
-        print("✓ Historia tyhjennetty")
+        print("Historia tyhjennetty")
+```
+
+---
+
+## **Commit changes:**
+```
+Commit message: "Fix unicode encoding"
+Commit changes
+```
+
+---
+
+## **Streamlit automaattisesti redeploy:**
+```
+Odota 1-2 minuuttia
+Streamlit huomaa muutoksen
+Redeploy automaattisesti
+Kokeile uudelleen!

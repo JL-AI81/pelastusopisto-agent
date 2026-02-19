@@ -12,10 +12,13 @@ class PelastusopistoAgent:
         self.client = Groq(api_key=GROQ_API_KEY)
         self.model = MODEL
         self.conversation_history = []
-        self.system_prompt = "Olet Pelastusopiston avustaja. Vastaat suomeksi."
-        print("Agentti alustettu")
+        self.system_prompt = "You are a helpful assistant for Pelastusopisto. Answer questions in Finnish about pelastusopisto.fi."
+        print("Agent initialized")
     
     def chat(self, user_message, max_iterations=5):
+        
+        # Puhdista kayttajan viesti
+        user_message = str(user_message).encode('ascii', 'ignore').decode('ascii')
         
         if not self.conversation_history:
             self.conversation_history.append({
@@ -44,7 +47,7 @@ class PelastusopistoAgent:
                 
                 self.conversation_history.append({
                     "role": "assistant",
-                    "content": message.content,
+                    "content": message.content or "",
                     "tool_calls": [
                         {
                             "id": tc.id,
@@ -65,18 +68,21 @@ class PelastusopistoAgent:
                     if tool_name in TOOL_FUNCTIONS:
                         result = TOOL_FUNCTIONS[tool_name](**tool_args)
                     else:
-                        result = {"status": "error", "content": "Tuntematon tyokalu"}
+                        result = {"status": "error", "content": "Unknown tool"}
+                    
+                    # Puhdista tool result
+                    result_str = json.dumps(result, ensure_ascii=True)
                     
                     self.conversation_history.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": json.dumps(result, ensure_ascii=False)
+                        "content": result_str
                     })
                 
                 continue
             
             else:
-                final_answer = message.content or ""
+                final_answer = message.content or "No response"
                 
                 self.conversation_history.append({
                     "role": "assistant",
@@ -85,7 +91,14 @@ class PelastusopistoAgent:
                 
                 return final_answer
         
-        return "Liian monta iteraatiota"
+        return "Too many iterations"
     
     def reset(self):
         self.conversation_history = []
+```
+
+---
+
+## **Commit:**
+```
+"Fix all unicode issues - ASCII only for API"

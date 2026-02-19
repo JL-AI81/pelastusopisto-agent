@@ -23,11 +23,15 @@ for msg in st.session_state.messages:
         st.chat_message("assistant").write(msg['content'])
 
 if prompt := st.chat_input("Kirjoita kysymyksesi..."):
+    # Korvaa suomalaiset ääkköset ASCII-merkeiksi
+    prompt_safe = prompt.replace('ä', 'a').replace('ö', 'o').replace('å', 'a')
+    prompt_safe = prompt_safe.replace('Ä', 'A').replace('Ö', 'O').replace('Å', 'A')
+    
     st.session_state.messages.append({'role': 'user', 'content': prompt})
     st.chat_message("user").write(prompt)
     
     with st.spinner('Ajattelee...'):
-        vastaus = st.session_state.agent.chat(prompt)
+        vastaus = st.session_state.agent.chat(prompt_safe)
     
     st.session_state.messages.append({'role': 'assistant', 'content': vastaus})
     st.chat_message("assistant").write(vastaus)

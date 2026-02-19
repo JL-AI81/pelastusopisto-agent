@@ -1,7 +1,11 @@
 import json
+import os
 from groq import Groq
 from config import GROQ_API_KEY, MODEL
 from tools import TOOLS_SCHEMA, TOOL_FUNCTIONS
+
+os.environ['LANG'] = 'C'
+os.environ['LC_ALL'] = 'C'
 
 class PelastusopistoAgent:
     def __init__(self):
@@ -19,13 +23,16 @@ class PelastusopistoAgent:
         self.conversation_history.append({"role": "user", "content": user_message})
         
         for i in range(max_iterations):
-            resp = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.conversation_history,
-                tools=TOOLS_SCHEMA,
-                tool_choice="auto",
-                max_tokens=2000
-            )
+            try:
+                resp = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=self.conversation_history,
+                    tools=TOOLS_SCHEMA,
+                    tool_choice="auto",
+                    max_tokens=2000
+                )
+            except UnicodeEncodeError as e:
+                return f"Encoding error: {str(e)}"
             
             msg = resp.choices[0].message
             
